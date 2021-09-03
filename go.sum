@@ -1,0 +1,10 @@
+github.com/go-ole/go-ole v1.2.4 h1:nNBDSCOigTSiarFpYE9J/KtEA1IOW4CNeqT9TQDqCxI=
+github.com/go-ole/go-ole v1.2.4/go.mod h1:XCwSNxSkXRo4vlyPy93sltvi/qJq0jqQhjqQNIwKuxM=
+github.com/gordonklaus/portaudio v0.0.0-20200911161147-bb74aa485641 h1:B7ADnac3Yy6Vtcp2mstnsjUtarYcjy4AL0R6eNEhZAk=
+github.com/gordonklaus/portaudio v0.0.0-20200911161147-bb74aa485641/go.mod h1:HfYnZi/ARQKG0dwH5HNDmPCHdLiFiBf+SI7DbhW7et4=
+github.com/itchyny/volume-go v0.2.1 h1:NiVdnIp3dyCBnygQoBLV9ecAk7Vk4KHfiZFJGvCCIm0=
+github.com/itchyny/volume-go v0.2.1/go.mod h1:YdvjyTIcPXyGcckaIHTfga+ItdhGZQoWhzOORajlkkE=
+github.com/lawl/pulseaudio v0.0.0-20210604102109-cb2596d6a8ef h1:mpCJg3O6C+B8mh5xoO147NG3Z70GBcFNgqgz2DH/rLQ=
+github.com/lawl/pulseaudio v0.0.0-20210604102109-cb2596d6a8ef/go.mod h1:9h36x4KH7r2V8DOCKoPMt87IXZ++X90y8D5nnuwq290=
+github.com/moutend/go-wca v0.2.0 h1:AEzY6ltC5zPCldKyMYdyXv3TaLqwxSW1TIradqNqRpU=
+github.com/moutend/go-wca v0.2.0/go.mod h1:L/ka++dPvkHYz0UuQ/PIQ3aTuecoXOIM1RSAesh6RYU=
