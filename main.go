@@ -1,32 +1,176 @@
 package main
 
 import (
-	"math/rand"
+	"bufio"
+	"fmt"
+	"os"
+	"os/exec"
+	"regexp"
+	"strconv"
 	"time"
 
-	"github.com/gordonklaus/portaudio"
+	"github.com/itchyny/volume-go"
+	"github.com/lawl/pulseaudio"
+	"github.com/pieterclaerhout/go-log"
 )
 
-func main() {
-	portaudio.Initialize()
-	defer portaudio.Terminate()
-	h, err := portaudio.DefaultHostApi()
-	chk(err)
-	var n int32
-	n = 0
-	stream, err := portaudio.OpenStream(portaudio.HighLatencyParameters(nil, h.DefaultOutputDevice), func(out []int32) {
-		for i := range out {
-			out[i] = int32(rand.Uint32())
-		}
-		println(n)
-		// n += 10000
-	})
-	chk(err)
-	defer stream.Close()
-	chk(stream.Start())
-	time.Sleep(30 * time.Second)
-	chk(stream.Stop())
+type employee struct {
+	firstName   string
+	lastName    string
+	totalLeaves int
+	leavesTaken int
 }
+
+func News(firstName string, lastName string, totalLeave int, leavesTaken int) employee {
+	e := employee{firstName, lastName, totalLeave, leavesTaken}
+	return e
+}
+
+func (e employee) LeavesRemaining() {
+	fmt.Printf("%s %s has %d leaves remaining\n", e.firstName, e.lastName, (e.totalLeaves - e.leavesTaken))
+}
+
+type VolumeLevels struct {
+	left  float64
+	right float64
+}
+
+func makeVolumeLevels(left string, right string) VolumeLevels {
+	left_, err := strconv.ParseFloat(left, 32)
+	chk(err)
+
+	right_, err := strconv.ParseFloat(right, 32)
+	chk(err)
+
+	levels := VolumeLevels{
+		left:  left_,
+		right: right_,
+	}
+
+	return levels
+}
+
+func (levels VolumeLevels) mean() float64 {
+	return (levels.left + levels.right) / 2.0
+}
+
+func makeVolumeLevelsParsingLine(line string, r *regexp.Regexp) *VolumeLevels { // VolumeLevels { (levels VolumeLevels)
+	// matched, err := regexp.MatchString(line, "[0-9.]+\\s+[0-9.]")
+	// chk(err)
+	// print(matched.)
+	submatch := r.FindStringSubmatch(line)
+	// fmt.Printf("%#v\n", submatch)
+	// fmt.Printf("%#v\n", r.SubexpNames())
+
+	if len(submatch) > 2 {
+		value := makeVolumeLevels(submatch[1], submatch[2])
+		return &value
+	}
+	return nil
+	// return levels.New(submatch[0], submatch[1])
+}
+
+func main() {
+	// bar := employee.News("2.2", "2.3")
+	reg := regexp.MustCompile(`(?P<LeftLevel>[0-9.]+)\s+(?P<RightLevel>[0-9.]+)`)
+	minAdjustmentDelay := 5
+	if len(os.Args) > 1 {
+		minAdjustmentDelay, _ = strconv.Atoi(os.Args[1])
+	}
+	client, err := pulseaudio.NewClient()
+	chk(err)
+	// out, err := exec.Command("./run.sh").Output()
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// fmt.Printf("The date is %s\n", out)
+
+	// Print the log timestamps
+	log.PrintTimestamp = true
+
+	// The command you want to run along with the argument
+	cmd := exec.Command("pavumeterc")
+
+	// Get a pipe to read from standard out
+	r, _ := cmd.StdoutPipe()
+
+	// Use the same pipe for standard error
+	cmd.Stderr = cmd.Stdout
+
+	// Make a new channel which will be used to ensure we get all output
+	done := make(chan struct{})
+
+	// Create a scanner which scans r in a line-by-line fashion
+	scanner := bufio.NewScanner(r)
+
+	// Use the scanner to scan the output line by line and log it
+	// It's running in a goroutine so that it doesn't block
+	go func() {
+
+		// Read line by line and process it
+		start := time.Now()
+
+		for scanner.Scan() {
+			line := scanner.Text()
+			levels := makeVolumeLevelsParsingLine(line, reg)
+			if levels != nil {
+				// fmt.Printf("%f\n", levels.mean())
+				log.Info(levels.mean())
+				secondsPassed := time.Since(start).Seconds()
+
+				if secondsPassed >= float64(minAdjustmentDelay) {
+					currentVolume, err := volume.GetVolume()
+					chk(err)
+					currentNormalizedVolume := float64(currentVolume) / 100.0
+
+					if levels.mean() < 0.5 && currentNormalizedVolume != 0.8 {
+						client.SetVolume(0.8)
+						start = time.Now()
+					} else if currentNormalizedVolume != 0.3 {
+						client.SetVolume(0.3)
+						start = time.Now()
+					}
+				}
+			}
+		}
+
+		// We're all done, unblock the channel
+		done <- struct{}{}
+
+	}()
+
+	// Start the command and check for errors
+	err = cmd.Start()
+	log.CheckError(err)
+
+	// Wait for all output to be processed
+	<-done
+
+	// Wait for the command to finish
+	err = cmd.Wait()
+	log.CheckError(err)
+}
+
+// func main() {
+// 	portaudio.Initialize()
+// 	defer portaudio.Terminate()
+// 	h, err := portaudio.DefaultHostApi()
+// 	chk(err)
+// 	var n int32
+// 	n = 0
+// 	stream, err := portaudio.OpenStream(portaudio.HighLatencyParameters(nil, h.DefaultOutputDevice), func(out []int32) {
+// 		for i := range out {
+// 			out[i] = int32(rand.Uint32())
+// 		}
+// 		println(n)
+// 		// n += 10000
+// 	})
+// 	chk(err)
+// 	defer stream.Close()
+// 	chk(stream.Start())
+// 	time.Sleep(30 * time.Second)
+// 	chk(stream.Stop())
+// }
 
 // func main() {
 // 	portaudio.Initialize()
