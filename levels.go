@@ -5,6 +5,8 @@ import (
 	"strconv"
 )
 
+var levelInfoParsingRegexp = regexp.MustCompile(`(?P<LeftLevel>[0-9.]+)\s+(?P<RightLevel>[0-9.]+)`)
+
 type VolumeLevels struct {
 	left  float64
 	right float64
@@ -29,8 +31,8 @@ func (levels VolumeLevels) mean() float64 {
 	return float64((levels.left + levels.right) / 2.0)
 }
 
-func makeVolumeLevelsParsingLine(line string, r *regexp.Regexp) *VolumeLevels { // VolumeLevels { (levels VolumeLevels)
-	submatch := r.FindStringSubmatch(line)
+func makeVolumeLevelsParsingLine(line string) *VolumeLevels { // VolumeLevels { (levels VolumeLevels)
+	submatch := levelInfoParsingRegexp.FindStringSubmatch(line)
 
 	if len(submatch) > 2 {
 		value := makeVolumeLevels(submatch[1], submatch[2])
